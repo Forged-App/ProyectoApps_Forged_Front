@@ -39,10 +39,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyectoappsmobiles.navigation.Pantallas
 import com.example.proyectoappsmobiles.ui.theme.Naranja
 import com.example.proyectoappsmobiles.ui.theme.VerdeExito
+import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 
 private data class PlanCard(
     val nombre: String,
@@ -52,7 +54,10 @@ private data class PlanCard(
 )
 
 @Composable
-fun PantallaPlanes(navController: NavController) {
+fun PantallaPlanes(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel()
+) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Mensual", "Anual", "Mi membresía")
 
@@ -106,7 +111,11 @@ fun PantallaPlanes(navController: NavController) {
                                 Text(plan.descripcion, color = Color.Gray, fontSize = 13.sp)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(
-                                    onClick = { navController.navigate(Pantallas.PAGO) },
+                                    onClick = {
+                                        viewModel.planSeleccionado = "Plan ${plan.nombre.lowercase()}"
+                                        viewModel.montoSeleccionado = plan.precio.substringBefore("/")
+                                        navController.navigate(Pantallas.PAGO)
+                                    },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (plan.destacado) Naranja else Color(0xFF2A2A2A)
                                     ),
@@ -152,7 +161,11 @@ fun PantallaPlanes(navController: NavController) {
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
-                                    onClick = { navController.navigate(Pantallas.PAGO) },
+                                    onClick = {
+                                        viewModel.planSeleccionado = "Plan anual"
+                                        viewModel.montoSeleccionado = "$299.00"
+                                        navController.navigate(Pantallas.PAGO)
+                                    },
                                     colors = ButtonDefaults.buttonColors(containerColor = Naranja),
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth()

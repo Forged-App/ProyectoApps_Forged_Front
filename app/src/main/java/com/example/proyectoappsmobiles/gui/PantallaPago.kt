@@ -1,5 +1,6 @@
 package com.example.proyectoappsmobiles.gui
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,22 +33,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyectoappsmobiles.navigation.Pantallas
 import com.example.proyectoappsmobiles.ui.theme.Naranja
+import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 
 @Composable
-fun PantallaPago(navController: NavController) {
+fun PantallaPago(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    val plan = viewModel.planSeleccionado
+    val monto = viewModel.montoSeleccionado
     var metodo by remember { mutableIntStateOf(0) }
     var tarjeta by remember { mutableStateOf("") }
     var fecha by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
     var titular by remember { mutableStateOf("") }
     var guardar by remember { mutableStateOf(true) }
-    val metodos = listOf("Tarjeta", "PayPal", "Tarjeta")
+    val metodos = listOf("Tarjeta", "PayPal", "Efectivo")
 
     Scaffold { padding ->
         Column(
@@ -74,8 +84,8 @@ fun PantallaPago(navController: NavController) {
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Plan premium", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("$.......", color = Naranja, fontWeight = FontWeight.Bold)
+                    Text(plan, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(monto, color = Naranja, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -120,10 +130,29 @@ fun PantallaPago(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
 
             BotonNaranja(
-                texto = "Pagar $........",
+                texto = "Pagar $monto",
                 onClick = {
-                    navController.navigate(Pantallas.CONFIRMACION_PAGO) {
-                        popUpTo(Pantallas.PAGO) { inclusive = true }
+                    val metodoPago = if (metodos[metodo] == "Tarjeta" && tarjeta.isNotBlank()) {
+                        "****${tarjeta.takeLast(4)}"
+                    } else {
+                        metodos[metodo]
+                    }
+                    viewModel.registrarPago(
+                        plan = plan,
+                        monto = monto,
+                        metodoPago = metodoPago
+                    ) { exito ->
+                        if (exito) {
+                            navController.navigate(Pantallas.CONFIRMACION_PAGO) {
+                                popUpTo(Pantallas.PAGO) { inclusive = true }
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "No se pudo registrar el pago",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             )

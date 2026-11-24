@@ -59,7 +59,7 @@ fun PantallaLogin(navController: NavController, viewModel: AppViewModel = viewMo
     var password by remember { mutableStateOf("") }
     var mostrarPassword by remember { mutableStateOf(false) }
 
-    val emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
 
     Column(
         modifier = Modifier
@@ -165,13 +165,17 @@ fun PantallaLogin(navController: NavController, viewModel: AppViewModel = viewMo
                 texto = "Login ›",
                 onClick = {
                     viewModel.login(email, password) { exito ->
-                        if (exito && emailValido) {
+                        if (exito) {
                             Toast.makeText(context, "Bienvenido", Toast.LENGTH_SHORT).show()
                             navController.navigate(Pantallas.INICIO) {
                                 popUpTo(Pantallas.LOGIN) { inclusive = true }
                             }
                         } else {
-                            Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                viewModel.mensajeError ?: "Credenciales incorrectas",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 }

@@ -4,7 +4,7 @@ import android.content.Context
 
 /**
  * Guarda en SharedPreferences el email del usuario con sesión iniciada.
- * No se almacena la contraseña: el usuario se recupera desde Room por su email.
+ * No se almacena la contraseña: el usuario se recupera desde la API por su email.
  */
 class SessionManager(context: Context) {
 

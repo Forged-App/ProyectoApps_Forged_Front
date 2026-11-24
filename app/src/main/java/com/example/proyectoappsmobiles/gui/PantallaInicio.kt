@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,10 @@ import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 fun PantallaInicio(navController: NavController, viewModel: AppViewModel = viewModel()) {
     var nivelSeleccionado by remember { mutableIntStateOf(0) }
     val niveles = listOf("Principiante", "Intermedio", "Avanzado")
+
+    val clases by viewModel.clases.collectAsState()
+    val membresia by viewModel.membresia.collectAsState()
+    val proximaClase = clases.firstOrNull()
 
     Scaffold(
 
@@ -79,7 +84,11 @@ fun PantallaInicio(navController: NavController, viewModel: AppViewModel = viewM
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { navController.navigate(Pantallas.MIS_CLASES) },
+                    .clickable {
+                        proximaClase?.let {
+                            navController.navigate("${Pantallas.DETALLE_CLASE}/${it.id}")
+                        } ?: navController.navigate(Pantallas.RESERVAR)
+                    },
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(3.dp)
             ) {
@@ -89,7 +98,7 @@ fun PantallaInicio(navController: NavController, viewModel: AppViewModel = viewM
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.yoga),
-                        contentDescription = "Cinta",
+                        contentDescription = "Clase",
                         modifier = Modifier
                             .size(72.dp)
                             .clip(RoundedCornerShape(10.dp)),
@@ -98,11 +107,19 @@ fun PantallaInicio(navController: NavController, viewModel: AppViewModel = viewM
 
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Yoga", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            proximaClase?.nombre ?: "Sin clases disponibles",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.AccessTime, null, tint = Color.Gray, modifier = Modifier.height(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("5:00 pm", color = Color.Gray, fontSize = 13.sp)
+                            Text(
+                                proximaClase?.horario ?: "Verifica la conexión con la API",
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                 }
@@ -166,8 +183,16 @@ fun PantallaInicio(navController: NavController, viewModel: AppViewModel = viewM
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Mi Membresía", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Plan Premium", color = Color.Gray, fontSize = 13.sp)
-                        Text("vence: 25 sep", color = Color.Gray, fontSize = 13.sp)
+                        Text(
+                            membresia?.tipoPlan ?: "Sin membresía",
+                            color = Color.Gray,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            "vence: ${membresia?.fechaVencimiento ?: "--"}",
+                            color = Color.Gray,
+                            fontSize = 13.sp
+                        )
                     }
                     Box(
                         modifier = Modifier

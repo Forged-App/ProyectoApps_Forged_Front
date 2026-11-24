@@ -32,6 +32,7 @@ import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 @Composable
 fun PantallaConfirmacionPago(navController: NavController, viewModel: AppViewModel = viewModel()) {
     val membresia by viewModel.membresia.collectAsState(initial = null)
+    val pago = viewModel.ultimoPago
 
     Scaffold { padding ->
         Column(
@@ -61,15 +62,21 @@ fun PantallaConfirmacionPago(navController: NavController, viewModel: AppViewMod
                 border = BorderStroke(2.dp, Naranja)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    DatoPago("Tipo de plan", membresia?.tipoPlan ?: "Plan premium")
+                    DatoPago("Tipo de plan", pago?.plan ?: membresia?.tipoPlan ?: "Plan premium")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    DatoPago("Duración y costo", "${membresia?.duracion ?: "1 mes"} / ${membresia?.costo ?: "$25.000"}")
+                    DatoPago(
+                        "Duración y costo",
+                        "${membresia?.duracion ?: "1 mes"} / ${pago?.monto ?: membresia?.costo ?: "$25.000"}"
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    DatoPago("Fecha de Inicio", membresia?.fechaInicio ?: "25 sep 2026")
+                    DatoPago("Fecha de Inicio", pago?.fechaInicio ?: membresia?.fechaInicio ?: "-")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    DatoPago("Fecha de vencimiento", membresia?.fechaVencimiento ?: "25 oct 2026")
+                    DatoPago(
+                        "Fecha de vencimiento",
+                        pago?.fechaVencimiento ?: membresia?.fechaVencimiento ?: "-"
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    DatoPago("Método de pago", membresia?.metodoPago ?: "****4312")
+                    DatoPago("Método de pago", pago?.metodoPago ?: membresia?.metodoPago ?: "-")
                 }
             }
 

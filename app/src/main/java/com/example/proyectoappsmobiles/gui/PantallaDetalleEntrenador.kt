@@ -62,12 +62,20 @@ fun PantallaDetalleEntrenador(
     viewModel: AppViewModel = viewModel()
 ) {
 
-    val entrenadores = listOf(
-        EntrenadorInfo(1, "Carlos Arturo", "Entrenador personal", "4.9 (180 reseñas)", "Soy entrenador certificado con más de 5 años de experiencia.", "Musculación, Resistencia", R.drawable.entrenador11),
-        EntrenadorInfo(2, "Laura Gomez", "Entrenadora Personal", "4.8 (150 reseñas)", "Especialista en entrenamiento funcional y tonificación.", "Pilates, Hipertrofia", R.drawable.entrenadora),
-        EntrenadorInfo(3, "Diego Ramirez", "Entrenador Personal", "4.8 (150 reseñas)", "Apasionado por la calistenia y preparación física.", "Calistenia, Funcional", R.drawable.entrenador2)
-    )
-    val entrenador = entrenadores.find { it.id == entrenadorId }
+    val entrenadoresApi by viewModel.entrenadores.collectAsState()
+    val entrenador = entrenadoresApi
+        .find { it.id == entrenadorId }
+        ?.let {
+            EntrenadorInfo(
+                id = it.id,
+                nombre = it.nombre,
+                rol = it.rol,
+                rating = "${it.calificacion} (${it.resenas} reseñas)",
+                sobreMi = it.sobreMi,
+                especialidades = it.especialidades,
+                imagen = imagenEntrenador(it.nombre)
+            )
+        }
 
     Scaffold(
         topBar = {
@@ -156,7 +164,10 @@ fun PantallaDetalleEntrenador(
             BotonNaranja(
                 texto = "Ver disponibilidad",
                 onClick = {
-                    // Actualizamos la reserva activa en el ViewModel con la info del entrenador encontrado
+                    // Guardamos el entrenador elegido para que la API de disponibilidad
+                    // devuelva únicamente sus franjas horarias.
+                    viewModel.entrenadorSeleccionadoId = entrenador.id
+                    viewModel.entrenadorSeleccionadoNombre = entrenador.nombre
                     viewModel.reservaSeleccionada = viewModel.reservaSeleccionada?.copy(
                         idClase = null,
                         titulo = "Entrenamiento Personal",

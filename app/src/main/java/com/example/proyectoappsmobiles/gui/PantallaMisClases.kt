@@ -44,13 +44,6 @@ import com.example.proyectoappsmobiles.ui.theme.Naranja
 import com.example.proyectoappsmobiles.ui.theme.VerdeExito
 import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 
-private data class ReservaCard(
-    val titulo: String,
-    val fecha: String,
-    val hora: String,
-    val entrenador: String
-)
-
 @Composable
 fun PantallaMisClases(navController: NavController, viewModel: AppViewModel = viewModel()) {
     var tab by remember { mutableIntStateOf(2) }
@@ -77,24 +70,27 @@ fun PantallaMisClases(navController: NavController, viewModel: AppViewModel = vi
 @Composable
 fun MisClasesContenido(navController: NavController, viewModel: AppViewModel = viewModel()) {
     val reservas by viewModel.reservas.collectAsState(initial = emptyList())
-    val items = listOf(
-        ReservaCard("Spinning", "mié 18 sep", "6:00 - 7:00 pm", "Carlos Arturo"),
-        ReservaCard("Yoga", "jue 19 sep", "7:00 - 8:00 pm", "Laura Gomez"),
-        ReservaCard("Entrenamiento funcional", "sáb 21 sep", "6:00 - 7:00 pm", "Alejandro Correa")
-    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        items.forEach { item ->
+        if (reservas.isEmpty()) {
+            Text(
+                "Todavía no tienes reservas. Agenda una clase o una sesión personal.",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        reservas.forEach { reserva ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
                     .clickable {
-                        reservas.firstOrNull()?.let { viewModel.reservaSeleccionada = it }
+                        viewModel.reservaSeleccionada = reserva
                         navController.navigate(Pantallas.CANCELAR_RESERVA)
                     },
                 shape = RoundedCornerShape(12.dp),
@@ -118,22 +114,22 @@ fun MisClasesContenido(navController: NavController, viewModel: AppViewModel = v
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(item.titulo, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(reserva.titulo, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
                                     .background(VerdeExito, RoundedCornerShape(20.dp))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
-                                Text("Activa", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(reserva.estado, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
-                        Text(item.fecha, color = Color.Gray, fontSize = 12.sp)
-                        Text(item.hora, color = Color.Gray, fontSize = 12.sp)
+                        Text(reserva.fecha, color = Color.Gray, fontSize = 12.sp)
+                        Text(reserva.hora, color = Color.Gray, fontSize = 12.sp)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(item.entrenador, color = Color.Gray, fontSize = 12.sp)
+                            Text(reserva.entrenador, color = Color.Gray, fontSize = 12.sp)
                         }
                     }
                     Text(">", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 18.sp)

@@ -15,6 +15,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,14 +25,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyectoappsmobiles.navigation.Pantallas
 import com.example.proyectoappsmobiles.ui.theme.AmarilloGradiente
 import com.example.proyectoappsmobiles.ui.theme.Cian
 import com.example.proyectoappsmobiles.ui.theme.Naranja
+import com.example.proyectoappsmobiles.viewmodel.AppViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
-fun PantallaRenovar(navController: NavController) {
+fun PantallaRenovar(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel()
+) {
+    val membresia by viewModel.membresia.collectAsState(initial = null)
+    val pagos by viewModel.pagos.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarMembresia()
+        viewModel.cargarPagos()
+    }
+
+    // La fecha sale de la membresía actual en la API; si todavía no existe,
+    // se usa el último pago registrado.
+    val fechaVencimiento = membresia?.fechaVencimiento?.takeIf { it.isNotBlank() }
+        ?: pagos.lastOrNull()?.fechaVencimiento
+    val dias = diasParaVencer(fechaVencimiento)
+
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -66,10 +91,23 @@ fun PantallaRenovar(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
             Text("Tu membresía vence en", color = Color.Gray, fontSize = 16.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("7 Días", color = Naranja, fontSize = 56.sp, fontWeight = FontWeight.Black)
+            Text(
+                when {
+                    dias == null -> "Sin membresía"
+                    dias == 1L -> "1 Día"
+                    else -> "$dias Días"
+                },
+                color = Naranja,
+                fontSize = if (dias == null) 32.sp else 56.sp,
+                fontWeight = FontWeight.Black
+            )
+            if (fechaVencimiento != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Vence: $fechaVencimiento", color = Color.Gray, fontSize = 14.sp)
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "No pierdad el acceso a tus beneficios",
+                "No pierdas el acceso a tus beneficios",
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
@@ -90,5 +128,30 @@ fun PantallaRenovar(navController: NavController) {
                 }
             )
         }
+    }
+}
+
+/** Días que faltan desde hoy hasta la fecha "dd MMM yyyy" de la API. */
+private fun diasParaVencer(fecha: String?): Long? {
+    if (fecha.isNullOrBlank()) return null
+    return try {
+        val formato = SimpleDateFormat("dd MMM yyyy", Locale("es", "CO"))
+        val vencimiento = formato.parse(fecha) ?: return null
+        val hoy = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val fin = Calendar.getInstance().apply {
+            time = vencimiento
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        ((fin.timeInMillis - hoy.timeInMillis) / (1000 * 60 * 60 * 24)).coerceAtLeast(0)
+    } catch (e: Exception) {
+        null
     }
 }

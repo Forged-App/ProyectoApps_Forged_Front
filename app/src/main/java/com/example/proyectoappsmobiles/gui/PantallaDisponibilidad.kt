@@ -14,17 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,10 +52,23 @@ data class DiaSemana(val dia: String, val numero: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaDisponibilidad(navController: NavController, viewModel: AppViewModel = viewModel()) {
+fun PantallaDisponibilidad(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel()
+) {
     val context = LocalContext.current
+    val disponibilidad by viewModel.disponibilidad.collectAsState()
+    val entrenadores by viewModel.entrenadores.collectAsState()
+
+    val entrenadorId = viewModel.entrenadorSeleccionadoId
+        ?: entrenadores.firstOrNull()?.id
+        ?: 1
+    val entrenadorNombre = viewModel.entrenadorSeleccionadoNombre
+        ?: entrenadores.firstOrNull { it.id == entrenadorId }?.nombre
+        ?: "Entrenador"
+
     var diaSeleccionado by remember { mutableStateOf("18") }
-    var horaSeleccionada by remember { mutableStateOf("3:00") }
+    var horaSeleccionada by remember { mutableStateOf("") }
 
     val dias = listOf(
         DiaSemana("Lun", "16"),
@@ -70,25 +80,35 @@ fun PantallaDisponibilidad(navController: NavController, viewModel: AppViewModel
         DiaSemana("Dom", "22")
     )
 
-    val horarios = listOf("09:00", "10:00", "11:00", "12:00", "01:00", "2:00", "3:00", "4:00", "5:00")
+    // Las franjas horarias vienen de la API según el entrenador y el día elegido.
+    LaunchedEffect(entrenadorId, diaSeleccionado) {
+        viewModel.cargarDisponibilidad(entrenadorId, diaSeleccionado)
+    }
+
+    val horarios = disponibilidad
+        .filter { it.dia == diaSeleccionado && it.disponible }
+        .map { it.hora }
+        .distinct()
+
+    LaunchedEffect(horarios) {
+        if (horaSeleccionada !in horarios) {
+            horaSeleccionada = horarios.firstOrNull().orEmpty()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("SEPTIEMBRE 2026", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        entrenadorNombre.uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.Search, null, tint = Color.White)
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.Tune, null, tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Naranja)
@@ -101,6 +121,14 @@ fun PantallaDisponibilidad(navController: NavController, viewModel: AppViewModel
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            Text(
+                "SEPTIEMBRE 2026",
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -135,33 +163,44 @@ fun PantallaDisponibilidad(navController: NavController, viewModel: AppViewModel
             Text("Horarios Disponibles", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(horarios) { hora ->
-                    val seleccionado = hora == horaSeleccionada
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .background(
-                                color = if (seleccionado) Naranja else Color.White,
-                                shape = RoundedCornerShape(50)
+            if (horarios.isEmpty()) {
+                Text(
+                    "No hay horarios disponibles para este día.",
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp)
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(horarios) { hora ->
+                        val seleccionado = hora == horaSeleccionada
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .background(
+                                    color = if (seleccionado) Naranja else Color.White,
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .border(
+                                    BorderStroke(1.dp, Color.Black),
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable { horaSeleccionada = hora },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                hora,
+                                fontWeight = FontWeight.Bold,
+                                color = if (seleccionado) Color.White else Color.Black
                             )
-                            .border(
-                                BorderStroke(1.dp, Color.Black),
-                                shape = RoundedCornerShape(50)
-                            )
-                            .clickable { horaSeleccionada = hora },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            hora,
-                            fontWeight = FontWeight.Bold,
-                            color = if (seleccionado) Color.White else Color.Black
-                        )
+                        }
                     }
                 }
             }
@@ -171,13 +210,25 @@ fun PantallaDisponibilidad(navController: NavController, viewModel: AppViewModel
             BotonNaranja(
                 texto = "Agendar",
                 onClick = {
-                    val fecha = "18-sep-2026"
+                    if (horaSeleccionada.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            "Selecciona un horario disponible",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@BotonNaranja
+                    }
+                    val fecha = "$diaSeleccionado-sep-2026"
                     val horaFormateada = if (horaSeleccionada.startsWith("0")) {
                         horaSeleccionada
                     } else {
                         "$horaSeleccionada pm"
                     }
-                    viewModel.reservarSesionPersonal(fecha, horaFormateada) { exito ->
+                    viewModel.reservarSesionPersonal(
+                        fecha = fecha,
+                        hora = horaFormateada,
+                        entrenadorNombre = entrenadorNombre
+                    ) { exito ->
                         if (exito) {
                             navController.navigate(Pantallas.CONFIRMACION_RESERVA) {
                                 popUpTo(Pantallas.DISPONIBILIDAD) { inclusive = true }

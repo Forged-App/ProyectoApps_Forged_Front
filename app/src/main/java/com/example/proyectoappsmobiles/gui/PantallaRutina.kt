@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,20 +37,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyectoappsmobiles.navigation.Pantallas
 import com.example.proyectoappsmobiles.ui.theme.Naranja
-
-private data class RutinaCard(val titulo: String, val detalle: String, val subtitulo: String)
+import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 
 @Composable
-fun PantallaRutina(navController: NavController) {
+fun PantallaRutina(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel()
+) {
     var diaSeleccionado by remember { mutableStateOf("18") }
-    val rutinas = listOf(
-        RutinaCard("FULL BODY", "4 series - 12 repeticiones", ""),
-        RutinaCard("LOWER BODY", "4 series - 12 repeticiones", ""),
-        RutinaCard("LOWER BODY", "7x4 Challenge", "30 Days")
-    )
+    val rutinas by viewModel.rutinas.collectAsState()
+    val rutinaDestacada = rutinas.firstOrNull()
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarRutinas()
+    }
 
     Scaffold(
         bottomBar = { MenuInferior(navController) }
@@ -72,7 +78,12 @@ fun PantallaRutina(navController: NavController) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navController.navigate(Pantallas.RUTINA_HOY) },
+                        .clickable {
+                            rutinaDestacada?.let {
+                                viewModel.rutinaSeleccionadaId = it.id
+                                navController.navigate(Pantallas.RUTINA_HOY)
+                            }
+                        },
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(3.dp)
                 ) {
@@ -90,21 +101,52 @@ fun PantallaRutina(navController: NavController) {
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Rutina de hoy", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text("Fuerza - Nivel Intermedio", color = Color.Gray, fontSize = 13.sp)
-                            Text("45 min - 6 ejercicios", color = Color.Gray, fontSize = 13.sp)
+                            Text(
+                                rutinaDestacada?.nombre ?: "Rutina de hoy",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            if (rutinaDestacada != null) {
+                                Text(
+                                    "${rutinaDestacada.tipo} - Nivel ${rutinaDestacada.nivel}",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    "${rutinaDestacada.duracionMin} min - ${rutinaDestacada.numeroEjercicios} ejercicios",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            } else {
+                                Text(
+                                    "Sin rutinas disponibles en la API",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                if (rutinas.isEmpty()) {
+                    Text(
+                        "No se encontraron rutinas. Verifica que la API esté corriendo.",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                }
+
                 rutinas.forEach { rutina ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 6.dp)
-                            .clickable { navController.navigate(Pantallas.RUTINA_HOY) },
+                            .clickable {
+                                viewModel.rutinaSeleccionadaId = rutina.id
+                                navController.navigate(Pantallas.RUTINA_HOY)
+                            },
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(3.dp)
                     ) {
@@ -123,14 +165,28 @@ fun PantallaRutina(navController: NavController) {
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("Banco", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                                Text(
+                                    rutina.tipo.ifBlank { "Rutina" },
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 11.sp
+                                )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(rutina.titulo, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text(rutina.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 Text(rutina.detalle, color = Color.Gray, fontSize = 13.sp)
+                                Text(
+                                    "${rutina.duracionMin} min - ${rutina.numeroEjercicios} ejercicios",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
                                 if (rutina.subtitulo.isNotEmpty()) {
-                                    Text(rutina.subtitulo, color = Naranja, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        rutina.subtitulo,
+                                        color = Naranja,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                             Text(">", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 18.sp)

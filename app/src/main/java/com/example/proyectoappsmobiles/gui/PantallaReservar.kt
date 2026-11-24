@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,43 +47,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyectoappsmobiles.navigation.Pantallas
 import com.example.proyectoappsmobiles.ui.theme.Naranja
-
-private data class ClaseCard(
-    val nombre: String,
-    val horario: String,
-    val entrenador: String,
-    val cupos: String,
-    val id: Int,
-    @DrawableRes val imagen: Int
-)
-
-private data class EntrenadorCard(
-    val nombre: String,
-    val rol: String,
-    val rating: String,
-    val IdEntrenador: Int,
-    @DrawableRes val imagen: Int
-)
+import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 
 @Composable
-fun PantallaReservar(navController: NavController) {
+fun PantallaReservar(navController: NavController, viewModel: AppViewModel = viewModel()) {
     var tab by remember { mutableIntStateOf(0) }
     var diaSeleccionado by remember { mutableStateOf("18") }
     val tabs = listOf("Grupales", "Personal", "Mis reservas")
 
-    val grupos = listOf(
-        ClaseCard("Spinning", "6:00 - 7:00 pm", "Carlos Arturo", "8/15 cupos", 1, R.drawable.spinning),
-        ClaseCard("Yoga", "7:00 - 8:00 pm", "Laura Gomez", "12/15 cupos", 2, R.drawable.yoga),
-        ClaseCard("Entrenamiento funcional", "6:00 - 7:00 pm", "Alejandro Correa", "9/15 cupos", 3, R.drawable.funcional)
-    )
-    val personales = listOf(
-        EntrenadorCard("Carlos Arturo", "Entrenador personal", "4.9 (180 reseñas)",1, R.drawable.entrenador11),
-        EntrenadorCard("Laura Gomez", "Entrenadora Personal", "4.8 (150 reseñas)",2, R.drawable.entrenadora),
-        EntrenadorCard("Diego Ramirez", "Entrenador Personal", "4.8 (150 reseñas)", 3, R.drawable.entrenador2)
-    )
+    val clases by viewModel.clases.collectAsState()
+    val entrenadores by viewModel.entrenadores.collectAsState()
 
     Scaffold(
         bottomBar = { MenuInferior(navController) }
@@ -109,91 +87,139 @@ fun PantallaReservar(navController: NavController) {
                     .verticalScroll(rememberScrollState())
             ) {
                 when (tab) {
-                    0 -> grupos.forEach { clase ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(3.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    0 -> {
+                        if (clases.isEmpty()) {
+                            Text(
+                                "No hay clases disponibles. Verifica la conexión con la API.",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                        clases.forEach { clase ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(3.dp)
                             ) {
-                                Image(
-                                    painter = painterResource(id = clase.imagen),
-                                    contentDescription = clase.nombre,
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(RoundedCornerShape(10.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(clase.nombre, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                    Text(clase.horario, color = Color.Gray, fontSize = 12.sp)
-                                    Text(clase.entrenador, color = Color.Gray, fontSize = 12.sp)
-                                    Text(clase.cupos, color = Naranja, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
-                                Button(
-                                    onClick = {
-                                        navController.navigate("${Pantallas.DETALLE_CLASE}/${clase.id}")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Naranja),
-                                    shape = RoundedCornerShape(10.dp)
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Reservar", color = Color.White, fontSize = 12.sp)
+                                    Image(
+                                        painter = painterResource(id = imagenClase(clase.nombre)),
+                                        contentDescription = clase.nombre,
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .clip(RoundedCornerShape(10.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(clase.nombre, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        Text(clase.horario, color = Color.Gray, fontSize = 12.sp)
+                                        Text(clase.entrenador, color = Color.Gray, fontSize = 12.sp)
+                                        Text(
+                                            "${clase.cuposOcupados}/${clase.cuposTotal} cupos",
+                                            color = Naranja,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Button(
+                                        onClick = {
+                                            navController.navigate("${Pantallas.DETALLE_CLASE}/${clase.id}")
+                                        },
+                                        enabled = clase.cuposOcupados < clase.cuposTotal,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Naranja),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text(
+                                            if (clase.cuposOcupados < clase.cuposTotal) "Reservar" else "Llena",
+                                            color = Color.White,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                    1 -> personales.forEach { entrenador ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(3.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+
+                    1 -> {
+                        if (entrenadores.isEmpty()) {
+                            Text(
+                                "No hay entrenadores disponibles. Verifica la conexión con la API.",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                        entrenadores.forEach { entrenador ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(3.dp)
                             ) {
-                                Image(
-                                    painter = painterResource(id = entrenador.imagen),
-                                    contentDescription = entrenador.nombre,
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(RoundedCornerShape(10.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(entrenador.nombre, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                    Text(entrenador.rol, color = Color.Gray, fontSize = 12.sp)
-                                    Text("⭐ ${entrenador.rating}", color = Naranja, fontSize = 12.sp)
-                                }
-                                Button(
-                                    onClick = {
-                                        navController.navigate("${Pantallas.DETALLE_ENTRENADOR}/${entrenador.IdEntrenador}")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Naranja),
-                                    shape = RoundedCornerShape(10.dp)
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Reservar", color = Color.White, fontSize = 12.sp)
+                                    Image(
+                                        painter = painterResource(id = imagenEntrenador(entrenador.nombre)),
+                                        contentDescription = entrenador.nombre,
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .clip(RoundedCornerShape(10.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(entrenador.nombre, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        Text(entrenador.rol, color = Color.Gray, fontSize = 12.sp)
+                                        Text(
+                                            "⭐ ${entrenador.calificacion} (${entrenador.resenas} reseñas)",
+                                            color = Naranja,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                    Button(
+                                        onClick = {
+                                            navController.navigate("${Pantallas.DETALLE_ENTRENADOR}/${entrenador.id}")
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Naranja),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text("Reservar", color = Color.White, fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
                     }
+
                     else -> {
-                        MisClasesContenido(navController)
+                        MisClasesContenido(navController, viewModel)
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
+}
+
+@DrawableRes
+private fun imagenClase(nombre: String): Int = when {
+    nombre.contains("spinning", ignoreCase = true) -> R.drawable.spinning
+    nombre.contains("yoga", ignoreCase = true) -> R.drawable.yoga
+    else -> R.drawable.funcional
+}
+
+@DrawableRes
+internal fun imagenEntrenador(nombre: String): Int = when {
+    nombre.contains("laura", ignoreCase = true) -> R.drawable.entrenadora
+    nombre.contains("carlos", ignoreCase = true) -> R.drawable.entrenador11
+    else -> R.drawable.entrenador2
 }
 
 @Composable

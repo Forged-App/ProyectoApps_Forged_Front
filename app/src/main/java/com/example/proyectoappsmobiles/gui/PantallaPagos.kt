@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,6 +46,13 @@ import com.example.proyectoappsmobiles.viewmodel.AppViewModel
 @Composable
 fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewModel()) {
     val membresia by viewModel.membresia.collectAsState(initial = null)
+    val pagos by viewModel.pagos.collectAsState()
+    val ultimoPago = pagos.lastOrNull()
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarPagos()
+        viewModel.cargarMembresia()
+    }
 
     Scaffold(
         bottomBar = { MenuInferior(navController) }
@@ -51,6 +61,7 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             Text("MI MEMBRESIA", fontSize = 22.sp, fontWeight = FontWeight.Black)
@@ -66,7 +77,12 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
                     Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Activa", color = VerdeExito, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    ultimoPago?.estado?.ifBlank { "Activa" } ?: "Activa",
+                    color = VerdeExito,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -77,10 +93,27 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
                 elevation = CardDefaults.cardElevation(3.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Plan: ${membresia?.tipoPlan ?: "Premium"}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        "Plan: ${membresia?.tipoPlan ?: ultimoPago?.plan ?: "Sin plan"}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Inicio: 25 Ago. 2026", color = Color.Gray, fontSize = 13.sp)
-                    Text("Vencimiento: 25 sep. 2026", color = Color.Gray, fontSize = 13.sp)
+                    Text(
+                        "Inicio: ${membresia?.fechaInicio ?: ultimoPago?.fechaInicio ?: "-"}",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        "Vencimiento: ${membresia?.fechaVencimiento ?: ultimoPago?.fechaVencimiento ?: "-"}",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        "Método de pago: ${membresia?.metodoPago ?: ultimoPago?.metodoPago ?: "-"}",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
                 }
             }
 
@@ -103,14 +136,62 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("18", color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Black)
-                            Text("Días restantes", color = Color.White, fontSize = 11.sp)
+                            Text("Activa", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black)
+                            Text("Membresía", color = Color.White, fontSize = 11.sp)
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text("HISTORIAL DE PAGOS", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (pagos.isEmpty()) {
+                Text(
+                    "Todavía no hay pagos registrados en la API.",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+            } else {
+                pagos.asReversed().forEach { pago ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(pago.plan, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text(
+                                    "${pago.fechaInicio} - ${pago.fechaVencimiento}",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    "${pago.metodoPago} · ${pago.estado}",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Text(
+                                pago.monto,
+                                color = Naranja,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = { navController.navigate(Pantallas.RENOVAR) },
@@ -120,7 +201,7 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
                 colors = ButtonDefaults.buttonColors(containerColor = Naranja),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Ver detalles ›", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Renovar membresía", color = Color.White, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -132,6 +213,7 @@ fun PantallaPagos(navController: NavController, viewModel: AppViewModel = viewMo
                     .align(Alignment.CenterHorizontally)
                     .clickable { navController.navigate(Pantallas.PLANES) }
             )
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

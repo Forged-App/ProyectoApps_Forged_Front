@@ -88,7 +88,7 @@ fun AppNavegacion() {
                 PantallaRegistro(navController, appViewModel)
             }
             composable(Pantallas.OLVIDE_PASSWORD) {
-                PantallaOlvidePassword(navController)
+                PantallaOlvidePassword(navController, appViewModel)
             }
             composable(Pantallas.VERIFICACION) {
                 PantallaVerificacion(navController)
@@ -112,10 +112,10 @@ fun AppNavegacion() {
                 PantallaHomeEntrenador(navController)
             }
             composable(Pantallas.CALENDARIO) {
-                PantallaMisClases(navController)
+                PantallaMisClases(navController, appViewModel)
             }
             composable(Pantallas.PAGOS) {
-                PantallaPagos(navController)
+                PantallaPagos(navController, appViewModel)
             }
             composable(Pantallas.PERFIL) {
                 PantallaPerfil(navController, appViewModel)
@@ -128,16 +128,16 @@ fun AppNavegacion() {
                 arguments = listOf(navArgument("entrenadorId") { type = NavType.IntType })
             ) { backStackEntry ->
                 val id = backStackEntry.arguments?.getInt("entrenadorId") ?: 1
-                PantallaDetalleEntrenador(navController, entrenadorId = id)
+                PantallaDetalleEntrenador(navController, entrenadorId = id, viewModel = appViewModel)
             }
             composable(Pantallas.DISPONIBILIDAD) {
-                PantallaDisponibilidad(navController)
+                PantallaDisponibilidad(navController, appViewModel)
             }
             composable(Pantallas.RESERVAR) {
-                PantallaReservar(navController)
+                PantallaReservar(navController, appViewModel)
             }
             composable(Pantallas.MIS_CLASES) {
-                PantallaMisClases(navController)
+                PantallaMisClases(navController, appViewModel)
             }
             composable(
                 route = "${Pantallas.DETALLE_CLASE}/{claseId}",
@@ -146,26 +146,26 @@ fun AppNavegacion() {
                 })
             ) { backStackEntry ->
                 val claseId = backStackEntry.arguments?.getInt("claseId") ?: 1
-                PantallaDetalleClase(navController = navController, claseId = claseId)
+                PantallaDetalleClase(navController = navController, claseId = claseId, viewModel = appViewModel)
             }
             composable(Pantallas.CONFIRMACION_RESERVA) {
-                PantallaConfirmacionReserva(navController)
+                PantallaConfirmacionReserva(navController, appViewModel)
             }
             composable(
                 route = "${Pantallas.CONFIRMACION_RESERVA_GRUPAL}/{claseId}",
                 arguments = listOf(navArgument("claseId") { type = NavType.IntType })
             ) { backStackEntry ->
                 val claseId = backStackEntry.arguments?.getInt("claseId") ?: 0
-                PantallaConfirmacionReservaGrupal(navController, claseId = claseId)
+                PantallaConfirmacionReservaGrupal(navController, claseId = claseId, viewModel = appViewModel)
             }
             composable(Pantallas.CANCELAR_RESERVA) {
-                PantallaCancelarReserva(navController)
+                PantallaCancelarReserva(navController, appViewModel)
             }
             composable(Pantallas.VERIFICACION_CANCELACION) {
-                PantallaVerificacionCancelacion(navController)
+                PantallaVerificacionCancelacion(navController, appViewModel)
             }
             composable(Pantallas.CONFIRMACION_CANCELACION) {
-                PantallaConfirmacionCancelacion(navController)
+                PantallaConfirmacionCancelacion(navController, appViewModel)
             }
             composable(Pantallas.UNIRSE_VIDEOLLAMADA) {
                 PantallaUnirseVideollamada(navController)
@@ -177,25 +177,25 @@ fun AppNavegacion() {
                 PantallaFinalizacion(navController)
             }
             composable(Pantallas.RUTINA) {
-                PantallaRutina(navController)
+                PantallaRutina(navController, appViewModel)
             }
             composable(Pantallas.RUTINA_HOY) {
-                PantallaRutinaHoy(navController)
+                PantallaRutinaHoy(navController, appViewModel)
             }
             composable(Pantallas.ASIGNAR_RUTINA) {
                 PantallaAsignarRutina(navController)
             }
             composable(Pantallas.PLANES) {
-                PantallaPlanes(navController)
+                PantallaPlanes(navController, appViewModel)
             }
             composable(Pantallas.RENOVAR) {
-                PantallaRenovar(navController)
+                PantallaRenovar(navController, appViewModel)
             }
             composable(Pantallas.PAGO) {
-                PantallaPago(navController)
+                PantallaPago(navController, appViewModel)
             }
             composable(Pantallas.CONFIRMACION_PAGO) {
-                PantallaConfirmacionPago(navController)
+                PantallaConfirmacionPago(navController, appViewModel)
             }
         }
     }
