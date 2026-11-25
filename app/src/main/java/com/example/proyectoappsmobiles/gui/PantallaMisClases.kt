@@ -68,14 +68,25 @@ fun PantallaMisClases(navController: NavController, viewModel: AppViewModel = vi
 }
 
 @Composable
-fun MisClasesContenido(navController: NavController, viewModel: AppViewModel = viewModel()) {
+fun MisClasesContenido(
+    navController: NavController,
+    viewModel: AppViewModel = viewModel(),
+    conScroll: Boolean = true
+) {
     val reservas by viewModel.reservas.collectAsState(initial = emptyList())
 
-    Column(
-        modifier = Modifier
+    // Cuando se muestra dentro de otra pantalla que ya tiene scroll (por
+    // ejemplo la pestaña "Mis reservas" de Reservar) no debe crear otro
+    // contenedor desplazable: Compose lo mide con altura infinita y falla.
+    val modifier = if (conScroll) {
+        Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-    ) {
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
+    Column(modifier = modifier) {
         if (reservas.isEmpty()) {
             Text(
                 "Todavía no tienes reservas. Agenda una clase o una sesión personal.",

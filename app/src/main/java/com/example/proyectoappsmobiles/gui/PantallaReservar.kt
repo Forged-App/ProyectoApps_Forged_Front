@@ -199,7 +199,7 @@ fun PantallaReservar(navController: NavController, viewModel: AppViewModel = vie
                     }
 
                     else -> {
-                        MisClasesContenido(navController, viewModel)
+                        MisClasesContenido(navController, viewModel, conScroll = false)
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
